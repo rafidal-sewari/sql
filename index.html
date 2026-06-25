@@ -367,7 +367,8 @@
             border: 1px solid rgba(255,255,255,0.7);
             box-shadow: inset 0 1px 2px rgba(31,38,71,0.04);
             border-radius: 14px;
-            color: #3d2f8f;
+            color: transparent;
+            caret-color: #3d2f8f;
             font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
             resize: vertical;
@@ -375,9 +376,93 @@
             transition: border-color 0.2s, box-shadow 0.2s;
             margin-bottom: 10px;
             line-height: 1.65;
+            position: relative;
+            z-index: 1;
+            background-clip: padding-box;
         }
 
         textarea::placeholder { color: #a8a8b3; }
+
+        .ac-wrap { position: relative; }
+
+        .ac-highlight {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 100%;
+            padding: 13px 15px;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: hidden;
+            pointer-events: none;
+            color: #3d2f8f;
+            box-sizing: border-box;
+            border: 1px solid transparent;
+        }
+
+        .ac-highlight .hl-kw     { color: var(--kw); font-weight: 600; }
+        .ac-highlight .hl-table  { color: var(--fn); font-weight: 600; }
+        .ac-highlight .hl-column { color: var(--str); font-weight: 600; }
+        .ac-highlight .hl-str    { color: var(--code); }
+        .ac-highlight .hl-num    { color: var(--green); }
+
+        .ac-dropdown {
+            position: absolute;
+            z-index: 30;
+            min-width: 140px;
+            max-width: 260px;
+            background: var(--glass-fill-strong);
+            backdrop-filter: blur(24px) saturate(1.7);
+            -webkit-backdrop-filter: blur(24px) saturate(1.7);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 12px;
+            box-shadow: var(--glass-shadow-lg);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ac-dropdown.show { display: flex; }
+
+        .ac-option {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--kw);
+            padding: 7px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .ac-option .ac-rest { color: var(--ink-soft); font-weight: 500; }
+        .ac-option .ac-label { display: flex; align-items: baseline; gap: 1px; }
+
+        .ac-option.ac-table { color: var(--fn); }
+        .ac-option.ac-column { color: var(--str); }
+
+        .ac-option .ac-tag {
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--muted-2);
+            opacity: 0.75;
+            flex-shrink: 0;
+        }
+
+        .ac-option:hover, .ac-option.ac-active {
+            background: rgba(0,113,227,0.14);
+        }
 
         textarea:focus {
             outline: none;
@@ -450,11 +535,18 @@
         .btn:active { transform: translateY(0) scale(0.98); }
 
         .btn-run {
+            background: rgba(255,255,255,0.55);
+            color: var(--ink-soft);
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+        .btn-run:hover { color: var(--ink); background: rgba(255,255,255,0.75); }
+
+        .btn-submit {
             background: linear-gradient(160deg, var(--accent-soft), var(--accent));
             color: #fff;
             box-shadow: 0 4px 14px rgba(0,113,227,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
         }
-        .btn-run:hover { box-shadow: 0 6px 18px rgba(0,113,227,0.45), inset 0 1px 0 rgba(255,255,255,0.4); }
+        .btn-submit:hover { box-shadow: 0 6px 18px rgba(0,113,227,0.45), inset 0 1px 0 rgba(255,255,255,0.4); }
 
         .btn-clear {
             background: rgba(255,255,255,0.55);
@@ -580,8 +672,9 @@
             <div class="schema-bar">
                 <div class="schema-table"><strong>users</strong>id · name · email · age</div>
             </div>
-            <textarea id="sb-0a" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-0a" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-0a','out-0a')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-0a','out-0a')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-0a','out-0a')">Clear</button>
             </div>
@@ -593,8 +686,9 @@
             <div class="schema-bar">
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
             </div>
-            <textarea id="sb-0b" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-0b" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-0b','out-0b')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-0b','out-0b')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-0b','out-0b')">Clear</button>
             </div>
@@ -621,18 +715,32 @@
             <div class="tip">💡 <strong>AND</strong> requires both conditions true. <strong>OR</strong> requires either. Parentheses control order: <code>(age &gt; 25 OR age &lt; 18) AND name != 'Bob'</code></div>
         </div>
         <div class="sandbox-card glass">
-            <div class="sandbox-label">▶ Try it</div>
-            <div class="challenge">Find all orders with an <strong>amount greater than 200</strong>. Then find users who are <strong>30 or older</strong>.</div>
+            <div class="sandbox-label">▶ Part 1 of 2</div>
+            <div class="challenge">Find all orders with an <strong>amount greater than 200</strong>.</div>
             <div class="schema-bar">
-                <div class="schema-table"><strong>users</strong>id · name · email · age</div>
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
             </div>
-            <textarea id="sb-1" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-1a" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
-                <button class="btn btn-run" onclick="run('sb-1','out-1')">▶ Run</button>
-                <button class="btn btn-clear" onclick="clear_('sb-1','out-1')">Clear</button>
+                <button class="btn btn-submit" onclick="submit('sb-1a','out-1a')">✓ Submit</button>
+                <button class="btn btn-run" onclick="run('sb-1a','out-1a')">▶ Run</button>
+                <button class="btn btn-clear" onclick="clear_('sb-1a','out-1a')">Clear</button>
             </div>
-            <div class="sandbox-output" id="out-1"></div>
+            <div class="sandbox-output" id="out-1a"></div>
+        </div>
+        <div class="sandbox-card glass">
+            <div class="sandbox-label">▶ Part 2 of 2</div>
+            <div class="challenge">Find users who are <strong>30 or older</strong>.</div>
+            <div class="schema-bar">
+                <div class="schema-table"><strong>users</strong>id · name · email · age</div>
+            </div>
+            <div class="ac-wrap"><textarea id="sb-1b" placeholder="Write your query here…"></textarea></div>
+            <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-1b','out-1b')">✓ Submit</button>
+                <button class="btn btn-run" onclick="run('sb-1b','out-1b')">▶ Run</button>
+                <button class="btn btn-clear" onclick="clear_('sb-1b','out-1b')">Clear</button>
+            </div>
+            <div class="sandbox-output" id="out-1b"></div>
         </div>
     </div>
 
@@ -662,8 +770,9 @@
                 <div class="schema-table"><strong>users</strong>id · name · email · age</div>
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
             </div>
-            <textarea id="sb-2" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-2" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-2','out-2')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-2','out-2')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-2','out-2')">Clear</button>
             </div>
@@ -702,8 +811,9 @@
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
             </div>
-            <textarea id="sb-3" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-3" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-3','out-3')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-3','out-3')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-3','out-3')">Clear</button>
             </div>
@@ -739,8 +849,9 @@
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
             </div>
-            <textarea id="sb-4" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-4" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-4','out-4')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-4','out-4')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-4','out-4')">Clear</button>
             </div>
@@ -777,8 +888,9 @@
                 <div class="schema-table"><strong>users</strong>id · name · email · age</div>
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
             </div>
-            <textarea id="sb-5" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-5" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-5','out-5')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-5','out-5')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-5','out-5')">Clear</button>
             </div>
@@ -818,8 +930,9 @@
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
             </div>
-            <textarea id="sb-6" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-6" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-6','out-6')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-6','out-6')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-6','out-6')">Clear</button>
             </div>
@@ -837,8 +950,9 @@
                 <div class="schema-table"><strong>orders</strong>id · user_id · amount · date</div>
                 <div class="schema-table"><strong>products</strong>id · name · price · category</div>
             </div>
-            <textarea id="sb-7" placeholder="SELECT * FROM users;" style="min-height:120px"></textarea>
+            <div class="ac-wrap"><textarea id="sb-7" placeholder="SELECT * FROM users;" style="min-height:120px"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-7','out-7')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-7','out-7')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-7','out-7')">Clear</button>
             </div>
@@ -861,8 +975,9 @@
         <div class="sandbox-card glass">
             <div class="sandbox-label">▶ Challenge 1</div>
             <div class="challenge">Which <strong>3 users</strong> are the <strong>oldest</strong>? Show their name and age.</div>
-            <textarea id="sb-8a" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-8a" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-8a','out-8a')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-8a','out-8a')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-8a','out-8a')">Clear</button>
             </div>
@@ -871,8 +986,9 @@
         <div class="sandbox-card glass">
             <div class="sandbox-label">▶ Challenge 2</div>
             <div class="challenge">What is the <strong>total amount spent</strong> across all orders? What's the <strong>average</strong>?</div>
-            <textarea id="sb-8b" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-8b" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-8b','out-8b')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-8b','out-8b')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-8b','out-8b')">Clear</button>
             </div>
@@ -881,8 +997,9 @@
         <div class="sandbox-card glass">
             <div class="sandbox-label">▶ Challenge 3</div>
             <div class="challenge">Show every <strong>Electronics product</strong>, sorted by <strong>price descending</strong>.</div>
-            <textarea id="sb-8c" placeholder="Write your query here…"></textarea>
+            <div class="ac-wrap"><textarea id="sb-8c" placeholder="Write your query here…"></textarea></div>
             <div class="btn-row">
+                <button class="btn btn-submit" onclick="submit('sb-8c','out-8c')">✓ Submit</button>
                 <button class="btn btn-run" onclick="run('sb-8c','out-8c')">▶ Run</button>
                 <button class="btn btn-clear" onclick="clear_('sb-8c','out-8c')">Clear</button>
             </div>
@@ -938,12 +1055,14 @@ const DB = {
 };
 
 /* ── SQL engine ── */
-function run(inputId, outputId) {
+
+// Executes the query and renders the table/info output. Returns { rows, simulated } or null on error (error already rendered).
+function executeQuery(inputId, outputId) {
     const q = document.getElementById(inputId).value.trim();
     const out = document.getElementById(outputId);
     out.classList.add('show');
     out.classList.remove('correct', 'incorrect');
-    if (!q) { out.innerHTML = '<span class="out-error">No query entered.</span>'; out.classList.add('incorrect'); return; }
+    if (!q) { out.innerHTML = '<span class="out-error">No query entered.</span>'; out.classList.add('incorrect'); return null; }
 
     const qu = q.toUpperCase().replace(/\s+/g, ' ');
     let rows = null;
@@ -964,13 +1083,29 @@ function run(inputId, outputId) {
         } else {
             out.innerHTML = '<span class="out-error">✗ Unsupported statement. Try SELECT, INSERT, UPDATE, or DELETE.</span>';
             out.classList.add('incorrect');
-            return;
+            return null;
         }
     } catch(e) {
         out.innerHTML = `<span class="out-error">✗ ${e.message}</span>`;
         out.classList.add('incorrect');
-        return;
+        return null;
     }
+
+    return { rows, simulated };
+}
+
+// Run: just execute and show the result — no grading.
+function run(inputId, outputId) {
+    executeQuery(inputId, outputId);
+}
+
+// Submit: execute, then grade against the challenge's validator.
+function submit(inputId, outputId) {
+    const result = executeQuery(inputId, outputId);
+    if (!result) return; // error already shown by executeQuery
+
+    const { rows, simulated } = result;
+    const out = document.getElementById(outputId);
 
     // Determine which validator key applies
     let vKey = null;
@@ -1013,11 +1148,19 @@ function run(inputId, outputId) {
             out.appendChild(badge);
         }
         updateUI();
+    } else if (!validator && rows !== null) {
+        // No validator for this sandbox (e.g. free sandbox) — just acknowledge.
+        const badge = document.createElement('div');
+        badge.style.cssText = 'color:var(--muted);font-family:IBM Plex Mono,monospace;font-size:11px;margin-top:8px;';
+        badge.textContent = 'No challenge to grade here — just exploring.';
+        out.appendChild(badge);
     }
 }
 
 function clear_(inputId, outputId) {
-    document.getElementById(inputId).value = '';
+    const ta = document.getElementById(inputId);
+    ta.value = '';
+    ta.dispatchEvent(new Event('input'));
     const out = document.getElementById(outputId);
     out.classList.remove('show', 'correct', 'incorrect');
     out.innerHTML = '';
@@ -1233,6 +1376,352 @@ function renderTable(data, out) {
     out.innerHTML = html;
 }
 
+/* ── Autocomplete dropdown for SQL keywords ── */
+const SQL_KEYWORDS = [
+    'SELECT', 'SET', 'FROM', 'WHERE', 'AND', 'OR', 'NOT',
+    'ORDER BY', 'ASC', 'DESC', 'LIMIT',
+    'GROUP BY', 'HAVING',
+    'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'AS',
+    'INNER JOIN', 'LEFT JOIN', 'ON',
+    'INSERT INTO', 'VALUES',
+    'UPDATE',
+    'DELETE FROM'
+];
+
+// What can plausibly come next, given the most recent keyword typed before the cursor.
+// Keys are checked against the last keyword found in the text so far (case-insensitive).
+// '__START__' = nothing meaningful typed yet (start of a fresh query).
+const NEXT_KEYWORDS = {
+    '__START__':   ['SELECT', 'INSERT INTO', 'UPDATE', 'DELETE FROM'],
+    'SELECT':      ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'AS', 'FROM'],
+    'COUNT':       ['AS', 'FROM'],
+    'SUM':         ['AS', 'FROM'],
+    'AVG':         ['AS', 'FROM'],
+    'MIN':         ['AS', 'FROM'],
+    'MAX':         ['AS', 'FROM'],
+    'AS':          ['FROM', 'WHERE', 'ORDER BY', 'GROUP BY'],
+    'FROM':        ['WHERE', 'INNER JOIN', 'LEFT JOIN', 'GROUP BY', 'ORDER BY', 'LIMIT'],
+    'INNER JOIN':  ['ON'],
+    'LEFT JOIN':   ['ON'],
+    'ON':          ['WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT'],
+    'WHERE':       ['AND', 'OR', 'NOT', 'ORDER BY', 'GROUP BY', 'LIMIT'],
+    'AND':         ['ORDER BY', 'GROUP BY', 'LIMIT'],
+    'OR':          ['ORDER BY', 'GROUP BY', 'LIMIT'],
+    'NOT':         [],
+    'GROUP BY':    ['HAVING', 'ORDER BY', 'LIMIT'],
+    'HAVING':      ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'ORDER BY', 'LIMIT'],
+    'ORDER BY':    ['ASC', 'DESC', 'LIMIT'],
+    'ASC':         ['LIMIT'],
+    'DESC':        ['LIMIT'],
+    'LIMIT':       [],
+    'INSERT INTO': [],
+    'VALUES':      [],
+    'UPDATE':      ['SET'],
+    'SET':         ['WHERE'],
+    'DELETE FROM': ['WHERE'],
+};
+
+// Contexts where a TABLE name is expected next.
+const EXPECTS_TABLE = new Set(['FROM', 'INNER JOIN', 'LEFT JOIN', 'UPDATE', 'INSERT INTO', 'DELETE FROM']);
+
+// Contexts where a COLUMN name is expected next (in addition to whatever keywords fit).
+const EXPECTS_COLUMN = new Set(['__START__', 'SELECT', 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'AS', 'WHERE', 'AND', 'OR', 'ON', 'ORDER BY', 'GROUP BY', 'HAVING', 'SET']);
+// Note: '__START__' isn't really a column context (handled by EXPECTS_TABLE/keyword logic naturally since
+// no FROM exists yet to resolve columns from — getTableColumns will just return [] in that case).
+
+function getSchemaTables() {
+    return Object.keys(DB);
+}
+
+function getAllColumns() {
+    const cols = new Set();
+    Object.values(DB).forEach(rows => {
+        if (rows.length) Object.keys(rows[0]).forEach(c => cols.add(c));
+    });
+    return Array.from(cols);
+}
+
+// Figure out which table(s) are in play based on FROM / JOIN / UPDATE / INSERT INTO / DELETE FROM
+// mentioned earlier in the text, so we can suggest that table's real columns.
+function getActiveTableColumns(textBeforeWord) {
+    const upper = textBeforeWord.toUpperCase();
+    const tableRe = /\b(?:FROM|JOIN|UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+(\w+)/g;
+    const found = new Set();
+    let m;
+    while ((m = tableRe.exec(upper)) !== null) {
+        const t = m[1].toLowerCase();
+        if (DB[t]) found.add(t);
+    }
+    if (found.size === 0) return getAllColumns(); // no table known yet — offer every column
+    const cols = new Set();
+    found.forEach(t => Object.keys(DB[t][0] || {}).forEach(c => cols.add(c)));
+    return Array.from(cols);
+}
+
+// Find the most recent recognized keyword in the text before the cursor.
+function getLastKeyword(textBeforeCursor) {
+    const upper = textBeforeCursor.toUpperCase();
+    let bestKw = '__START__';
+    let bestIndex = -1;
+    SQL_KEYWORDS.forEach(kw => {
+        // Match the keyword as a whole word (so "order" inside "orders" doesn't count, etc.)
+        const re = new RegExp('\\b' + kw.replace(/\s+/g, '\\s+') + '\\b', 'g');
+        let m;
+        while ((m = re.exec(upper)) !== null) {
+            if (m.index > bestIndex) {
+                bestIndex = m.index;
+                bestKw = kw;
+            }
+        }
+    });
+    return bestKw;
+}
+
+// Mirrors the textarea's text box-model so we can measure where the caret sits.
+const MIRROR_PROPS = [
+    'fontFamily','fontSize','fontWeight','letterSpacing','lineHeight',
+    'paddingTop','paddingRight','paddingBottom','paddingLeft',
+    'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
+    'boxSizing','whiteSpace','wordWrap'
+];
+
+function getCaretCoords(textarea, position) {
+    const div = document.createElement('div');
+    const style = getComputedStyle(textarea);
+    MIRROR_PROPS.forEach(p => { div.style[p] = style[p]; });
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+    div.style.width = textarea.clientWidth + 'px';
+    div.style.top = '0';
+    div.style.left = '-9999px';
+
+    const before = textarea.value.slice(0, position);
+    const span = document.createElement('span');
+    span.textContent = '\u200b'; // zero-width marker
+
+    div.textContent = before;
+    div.appendChild(span);
+    document.body.appendChild(div);
+
+    const coords = {
+        top: span.offsetTop + parseInt(style.borderTopWidth || '0', 10),
+        left: span.offsetLeft + parseInt(style.borderLeftWidth || '0', 10),
+        lineHeight: parseInt(style.lineHeight || '18', 10) || 18
+    };
+
+    document.body.removeChild(div);
+    return coords;
+}
+
+function setupAutocomplete(textarea) {
+    const wrap = textarea.closest('.ac-wrap');
+    if (!wrap) return;
+
+    // Highlight overlay: sits beneath the (now text-transparent) textarea, mirrors its content with color.
+    const highlight = document.createElement('div');
+    highlight.className = 'ac-highlight';
+    wrap.insertBefore(highlight, textarea);
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderHighlight() {
+        const text = textarea.value;
+        if (!text) { highlight.innerHTML = ''; return; }
+
+        const tableNames = getSchemaTables();
+        const columnNames = getAllColumns();
+        // Longer names first so e.g. "user_id" matches before "id" inside word-boundary regex alternation.
+        const tableAlt = tableNames.slice().sort((a,b)=>b.length-a.length).join('|');
+        const columnAlt = columnNames.slice().sort((a,b)=>b.length-a.length).join('|');
+        const kwAlt = SQL_KEYWORDS.slice().sort((a,b)=>b.length-a.length)
+            .map(k => k.replace(/\s+/g, '\\s+')).join('|');
+
+        // Tokenize: strings, numbers, keywords, table names, column names — longest/most-specific first.
+        const tokenRe = new RegExp(
+            "('[^']*')" +                          // 1: string literal
+            "|(\\b\\d+\\.?\\d*\\b)" +               // 2: number
+            (kwAlt ?     "|(\\b(?:" + kwAlt + ")\\b)" : "()") +     // 3: keyword
+            (tableAlt ?  "|(\\b(?:" + tableAlt + ")\\b)" : "()") +  // 4: table
+            (columnAlt ? "|(\\b(?:" + columnAlt + ")\\b)" : "()"),  // 5: column
+            "gi"
+        );
+
+        let html = '';
+        let last = 0;
+        let m;
+        while ((m = tokenRe.exec(text)) !== null) {
+            html += escapeHtml(text.slice(last, m.index));
+            const tok = m[0];
+            if (m[1] !== undefined) html += `<span class="hl-str">${escapeHtml(tok)}</span>`;
+            else if (m[2] !== undefined) html += `<span class="hl-num">${escapeHtml(tok)}</span>`;
+            else if (m[3] !== undefined) html += `<span class="hl-kw">${escapeHtml(tok)}</span>`;
+            else if (m[4] !== undefined) html += `<span class="hl-table">${escapeHtml(tok)}</span>`;
+            else if (m[5] !== undefined) html += `<span class="hl-column">${escapeHtml(tok)}</span>`;
+            else html += escapeHtml(tok);
+            last = m.index + tok.length;
+        }
+        html += escapeHtml(text.slice(last));
+        // Trailing newline padding so the overlay's height tracks the textarea's last line correctly.
+        highlight.innerHTML = html + '\n';
+    }
+
+    function syncScroll() {
+        highlight.scrollTop = textarea.scrollTop;
+        highlight.scrollLeft = textarea.scrollLeft;
+    }
+
+    textarea.addEventListener('input', renderHighlight);
+    textarea.addEventListener('scroll', syncScroll);
+    renderHighlight();
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'ac-dropdown';
+    wrap.appendChild(dropdown);
+
+    let activeIndex = 0;
+    let currentMatches = [];
+    let wordStart = 0, wordEnd = 0;
+
+    function closeDropdown() {
+        dropdown.classList.remove('show');
+        dropdown.innerHTML = '';
+        currentMatches = [];
+    }
+
+    function applyCompletion(item) {
+        const value = textarea.value;
+        const keyword = item.text;
+        const newValue = value.slice(0, wordStart) + keyword + ' ' + value.slice(wordEnd);
+        textarea.value = newValue;
+        const newCursor = wordStart + keyword.length + 1;
+        textarea.selectionStart = textarea.selectionEnd = newCursor;
+        renderHighlight();
+        closeDropdown();
+        textarea.focus();
+    }
+
+    function renderDropdown() {
+        dropdown.innerHTML = '';
+        currentMatches.forEach((item, i) => {
+            const opt = document.createElement('div');
+            opt.className = 'ac-option ac-' + item.type + (i === activeIndex ? ' ac-active' : '');
+            const typed = textarea.value.slice(wordStart, wordEnd);
+            const tagLabel = item.type === 'table' ? 'table' : item.type === 'column' ? 'column' : '';
+            opt.innerHTML = `<span class="ac-label"><span>${item.text.slice(0, typed.length)}</span><span class="ac-rest">${item.text.slice(typed.length)}</span></span>${tagLabel ? `<span class="ac-tag">${tagLabel}</span>` : ''}`;
+            opt.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // keep focus on textarea
+                applyCompletion(item);
+            });
+            opt.addEventListener('mouseenter', () => {
+                activeIndex = i;
+                renderDropdown();
+            });
+            dropdown.appendChild(opt);
+        });
+    }
+
+    function updateDropdown() {
+        const cursor = textarea.selectionStart;
+        const value = textarea.value;
+        const beforeCursor = value.slice(0, cursor);
+        const wordMatch = beforeCursor.match(/[A-Za-z_]+$/);
+
+        if (!wordMatch) { closeDropdown(); return; }
+
+        const partial = wordMatch[0];
+        const upperPartial = partial.toUpperCase();
+        wordStart = cursor - partial.length;
+        wordEnd = cursor;
+
+        // Figure out grammatical context: what keyword came last, and what's allowed after it.
+        const textBeforeWord = value.slice(0, wordStart);
+        const lastKeyword = getLastKeyword(textBeforeWord);
+        const allowed = NEXT_KEYWORDS[lastKeyword] || [];
+
+        let matches = [];
+
+        // Keyword suggestions (e.g. FROM, WHERE, AS...)
+        allowed.forEach(kw => {
+            if (kw.startsWith(upperPartial) && kw !== upperPartial) {
+                matches.push({ text: kw, type: 'keyword' });
+            }
+        });
+
+        // Table-name suggestions (after FROM, JOIN, UPDATE, INSERT INTO, DELETE FROM)
+        if (EXPECTS_TABLE.has(lastKeyword)) {
+            getSchemaTables().forEach(t => {
+                if (t.toUpperCase().startsWith(upperPartial) && t.toUpperCase() !== upperPartial) {
+                    matches.push({ text: t, type: 'table' });
+                }
+            });
+        }
+
+        // Column-name suggestions (after SELECT, WHERE, AND/OR, ORDER BY, etc.)
+        if (EXPECTS_COLUMN.has(lastKeyword)) {
+            getActiveTableColumns(textBeforeWord).forEach(c => {
+                if (c.toUpperCase().startsWith(upperPartial) && c.toUpperCase() !== upperPartial) {
+                    matches.push({ text: c, type: 'column' });
+                }
+            });
+        }
+
+        // De-dupe (a name could theoretically collide with a keyword) and sort shortest-first.
+        const seen = new Set();
+        matches = matches.filter(m => {
+            const key = m.type + ':' + m.text;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        matches.sort((a, b) => a.text.length - b.text.length);
+
+        if (matches.length === 0) { closeDropdown(); return; }
+
+        currentMatches = matches;
+        activeIndex = 0;
+
+        const coords = getCaretCoords(textarea, cursor);
+        dropdown.style.top = (coords.top + coords.lineHeight + 2) + 'px';
+        dropdown.style.left = coords.left + 'px';
+
+        renderDropdown();
+        dropdown.classList.add('show');
+    }
+
+    textarea.addEventListener('input', updateDropdown);
+    textarea.addEventListener('click', updateDropdown);
+
+    textarea.addEventListener('keydown', function(e) {
+        if (!dropdown.classList.contains('show')) return;
+
+        if (e.key === 'Tab' || e.key === 'Enter') {
+            e.preventDefault();
+            applyCompletion(currentMatches[activeIndex]);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex = (activeIndex + 1) % currentMatches.length;
+            renderDropdown();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = (activeIndex - 1 + currentMatches.length) % currentMatches.length;
+            renderDropdown();
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+
+    textarea.addEventListener('blur', () => {
+        // Small delay so a mousedown click on an option can still register first.
+        setTimeout(closeDropdown, 100);
+    });
+}
+
+document.querySelectorAll('.sandbox-card textarea').forEach(setupAutocomplete);
+
 /* ── Navigation ── */
 const slides = Array.from(document.querySelectorAll('.slide'));
 const TOTAL  = slides.length;
@@ -1254,23 +1743,23 @@ const VALIDATORS = {
         const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
         return keys.some(k => k.includes('name')) && keys.some(k => k.includes('price')) && keys.some(k => k.includes('category'));
     },
-    // Slide 1a: orders with amount > 200 (ids 2,4,5 → amounts 280.50, 450, 175.75)
-    // OR users 30 or older (ids 2,4 → ages 35,31)
-    // Accept either valid answer
-    1: (rows) => {
+    // Slide 1 Part 1: orders with amount > 200 (ids 2,4,5 → amounts 280.50, 450, 175.75... must all be > 200)
+    '1a': (rows) => {
         if (!rows || rows.length === 0) return false;
         const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
-        // Check for orders > 200 answer
-        if (keys.some(k => k.includes('amount'))) {
-            const amounts = rows.map(r => parseFloat(Object.values(r)[keys.findIndex(k=>k.includes('amount'))]));
-            return amounts.every(a => a > 200) && amounts.length >= 2;
-        }
-        // Check for users >= 30 answer
-        if (keys.some(k => k.includes('age'))) {
-            const ages = rows.map(r => parseFloat(Object.values(r)[keys.findIndex(k=>k.includes('age'))]));
-            return ages.every(a => a >= 30) && ages.length >= 2;
-        }
-        return false;
+        const amtIdx = keys.findIndex(k => k.includes('amount'));
+        if (amtIdx === -1) return false;
+        const amounts = rows.map(r => parseFloat(Object.values(r)[amtIdx]));
+        return amounts.length >= 2 && amounts.every(a => a > 200);
+    },
+    // Slide 1 Part 2: users 30 or older (ids 2,4 → ages 35,31)
+    '1b': (rows) => {
+        if (!rows || rows.length === 0) return false;
+        const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+        const ageIdx = keys.findIndex(k => k.includes('age'));
+        if (ageIdx === -1) return false;
+        const ages = rows.map(r => parseFloat(Object.values(r)[ageIdx]));
+        return ages.length >= 2 && ages.every(a => a >= 30);
     },
     // Slide 2: 3 youngest users (ages 22,26,28) OR products sorted by category+price
     2: (rows) => {
@@ -1347,6 +1836,7 @@ const VALIDATORS = {
 function isCurrentSolved() {
     if (current === 7 || current === 9) return true; // Free sandbox & done screen
     if (current === 0) return solved.has('0a') && solved.has('0b');
+    if (current === 1) return solved.has('1a') && solved.has('1b');
     if (current === 8) return solved.has('8a') && solved.has('8b') && solved.has('8c');
     return solved.has(current);
 }
